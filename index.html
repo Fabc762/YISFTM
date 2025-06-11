@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTM</title>
+    <!-- Tailwind CSS CDN para estilos modernos y responsivos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuentes personalizadas (Inter es una buena opción para interfaces modernas) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Fondo con gradiente sutil para un look más premium */
+            background: linear-gradient(135deg, #1a202c 0%, #0a0e14 100%);
+            color: #e2e8f0; /* Texto claro */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinear al inicio para dejar espacio a la barra lateral */
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px; /* Padding general para evitar que se pegue a los bordes en móviles */
+            overflow: hidden; /* Evita scroll no deseado en body */
+        }
+
+        /* Contenedor principal de la aplicación (abarca barra lateral y chat) */
+        .app-container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px; /* Ancho máximo de la aplicación completa */
+            min-height: 80vh; /* Altura mínima para que sea visible */
+            border-radius: 20px;
+            overflow: hidden;
+            background-color: #2d3748; /* Fondo general de la app */
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); /* Sombra general */
+        }
+
+        /* Barra lateral izquierda */
+        .sidebar {
+            width: 250px; /* Ancho de la barra lateral */
+            background-color: #1a202c; /* Fondo más oscuro para la barra lateral */
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #4a5568; /* Separador */
+            box-shadow: inset -5px 0 10px rgba(0, 0, 0, 0.2); /* Sombra interna para profundidad */
+        }
+
+        .sidebar-header {
+            font-size: 1.8rem; /* Tamaño de fuente grande para el título */
+            font-weight: 700;
+            color: white;
+            text-align: center;
+            margin-bottom: 2rem;
+            letter-spacing: 0.05em;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-button {
+            width: 100%;
+            background: linear-gradient(90deg, #4299e1, #63b3ed); /* Gradiente azul */
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-bottom: 1rem; /* Espacio entre botones */
+        }
+
+        .sidebar-button:hover {
+            background: linear-gradient(90deg, #63b3ed, #4299e1); /* Invertir gradiente */
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .sidebar-button:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Estilo para el botón activo en la sidebar */
+        .sidebar-button.active {
+            background: linear-gradient(90deg, #38a169, #48bb78); /* Color diferente para activo */
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5); /* Sombra interna */
+        }
+
+        /* Contenedor principal del chat (el que hemos estado estilizando) */
+        .chat-container {
+            flex-grow: 1; /* Ocupa el espacio restante */
+            background-color: #2d3748; /* Fondo principal del chat */
+            border-radius: 0; /* Sin bordes redondeados aquí, ya los tiene el app-container */
+            box-shadow: none; /* Sin sombra aquí */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0; /* Sin margen */
+            border: none; /* Sin borde */
+        }
+
+        .chat-header {
+            background: #2d3748; /* Fondo más oscuro para el encabezado del chat */
+            padding: 1.5rem 2rem;
+            text-align: center;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #e2e8f0; /* Color de texto del encabezado */
+            border-bottom: 1px solid #4a5568; /* Borde inferior */
+            letter-spacing: 0.05em;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); /* Sombra sutil */
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Estilo general del mensaje */
+        .message {
+            display: flex;
+            align-items: flex-start;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Animación de aparición de mensajes */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mensajes del usuario */
+        .message.user {
+            margin-left: auto;
+            flex-direction: row-reverse;
+        }
+
+        /* Burbuja de mensaje */
+        .message-bubble {
+            padding: 0.9rem 1.2rem;
+            border-radius: 1.5rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #4299e1, #63b3ed);
+            color: white;
+            border-bottom-right-radius: 0.5rem;
+        }
+
+        .message.bot .message-bubble {
+            background-color: #a0aec0;
+            color: #2d3748;
+            border-bottom-left-radius: 0.5rem;
+        }
+
+        /* Avatar del mensaje */
+        .message-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            margin: 0 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            background-color: #718096;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .message.user .message-avatar {
+            background-color: #3182ce;
+        }
+
+        /* Área de entrada de chat */
+        .chat-input-area {
+            display: flex;
+            align-items: center;
+            padding: 1.5rem;
+            border-top: 1px solid #4a5568;
+            background-color: #2d3748;
+            border-bottom-left-radius: 0; /* Ya no está en el app-container principal */
+            border-bottom-right-radius: 0;
+            box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.2); /* Sombra superior */
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            padding: 0.85rem 1.25rem;
+            border-radius: 30px;
+            border: 1px solid #4a5568;
+            background-color: #4a5568;
+            color: white;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-size: 1rem;
+        }
+        .chat-input::placeholder {
+            color: #a0aec0;
+        }
+        .chat-input:focus {
+            border-color: #63b3ed;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+        }
+
+        /* Botón de enviar */
+        .send-button {
+            background: linear-gradient(90deg, #63b3ed, #4299e1);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 1.25rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .send-button:hover {
+            background: linear-gradient(90deg, #4299e1, #63b3ed);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        .send-button:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .send-button svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        /* Botón de subir imagen */
+        .image-upload-button {
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 1.25rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .image-upload-button:hover {
+            background: linear-gradient(90deg, #38a169, #48bb78);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        .image-upload-button:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .image-upload-button svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        /* Estilos para las imágenes dentro de las burbujas de chat */
+        .message-bubble img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            margin-top: 12px;
+            display: block;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Loading indicator */
+        .loading-dots {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            height: 20px;
+        }
+        .loading-dots span {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #63b3ed;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0s;
+        }
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.0);
+                opacity: 1;
+            }
+        }
+
+        /* Previsualización de imagen */
+        #image-preview-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 1.5rem 1rem 1.5rem;
+            padding: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            max-height: 100px; 
+            background-color: transparent;
+            box-shadow: none;
+        }
+        #image-preview {
+            max-width: 100%;
+            height: 90px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid #4a5568;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        #clear-image-preview { /* Ocultar el botón X */
+            display: none; 
+        }
+
+        /* Estilos específicos para las nuevas secciones */
+        .content-section {
+            display: none; /* Ocultar todas las secciones por defecto */
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: 70vh;
+            flex-direction: column; /* Asegurar que el contenido se apile */
+            gap: 1.25rem;
+        }
+
+        .content-section.active {
+            display: flex; /* Mostrar solo la sección activa */
+        }
+
+        /* Estilos para la sección de videos */
+        .video-section {
+            background-color: #384252;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .video-input-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .video-input {
+            flex-grow: 1;
+            padding: 0.85rem 1.25rem;
+            border-radius: 30px;
+            border: 1px solid #4a5568;
+            background-color: #4a5568;
+            color: white;
+            outline: none;
+        }
+
+        .embed-video-button {
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .embed-video-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .video-player {
+            width: 100%;
+            height: 315px; /* Altura estándar para videos de YouTube, ajustar según sea necesario */
+            border-radius: 10px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+
+        /* Estilos para la sección de juegos */
+        .games-section {
+            background-color: #384252;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) { /* Ajuste para tablets y móviles */
+            body {
+                padding: 0;
+            }
+            .app-container {
+                flex-direction: column; /* Apilar sidebar y chat */
+                border-radius: 0;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+            .sidebar {
+                width: 100%; /* Sidebar ocupa todo el ancho */
+                height: auto; /* Altura automática */
+                padding: 1rem;
+                border-right: none;
+                border-bottom: 1px solid #4a5568; /* Borde inferior en lugar de derecho */
+                order: -1; /* Mover sidebar al principio */
+                flex-direction: row; /* Elementos en fila */
+                justify-content: space-between; /* Espacio entre FTM y botón */
+                align-items: center;
+            }
+            .sidebar-header {
+                margin-bottom: 0;
+                font-size: 1.5rem;
+                text-align: left;
+            }
+            .sidebar-button {
+                width: auto; /* Ancho automático */
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+                margin-bottom: 0; /* Sin margen inferior en fila */
+                margin-left: 0.5rem; /* Pequeño margen entre botones */
+            }
+            .chat-container {
+                border-radius: 0;
+                min-height: calc(100vh - 150px); /* Ajustar altura para dejar espacio al sidebar */
+            }
+            .chat-messages, .content-section {
+                padding: 1rem;
+                max-height: calc(100vh - 220px); /* Ajusta altura para el input y el sidebar en móvil */
+            }
+            .chat-header {
+                padding: 1rem;
+                font-size: 1.5rem;
+                border-radius: 0;
+            }
+            .chat-input-area {
+                padding: 1rem;
+                border-radius: 0;
+            }
+            .chat-input, .send-button, .image-upload-button {
+                height: 45px;
+                width: 45px;
+            }
+            .chat-input {
+                font-size: 0.9rem;
+            }
+            .send-button, .image-upload-button {
+                margin-left: 0.75rem;
+                margin-right: 0.75rem;
+            }
+            #image-preview-container {
+                margin: 0.5rem 1rem;
+                max-height: 80px;
+            }
+            #image-preview {
+                height: 70px;
+            }
+            .video-input-container {
+                flex-direction: column; /* Apilar input y botón en móvil */
+            }
+            .embed-video-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Barra lateral izquierda -->
+        <div class="sidebar">
+            <div class="sidebar-header">FTM</div>
+            <button id="chat-button" class="sidebar-button active">Chat</button>
+            <button id="new-conversation-button" class="sidebar-button">Nueva Conversación</button>
+            <!-- Nuevo botón para Games unblocked -->
+            <button id="games-unblocked-button" class="sidebar-button">Games unblocked</button>
+            <button id="videos-button" class="sidebar-button">Videos de YouTube</button>
+            <button id="games-button" class="sidebar-button">Juegos</button>
+        </div>
+
+        <!-- Contenedor principal del contenido -->
+        <div class="chat-container">
+            <!-- Encabezado que se mantiene visible -->
+            <div class="chat-header">
+                FTM
+            </div>
+
+            <!-- Sección de Chat (activa por defecto) -->
+            <div id="chat-view" class="content-section active">
+                <div id="chat-messages" class="chat-messages">
+                    <!-- Los mensajes del chat se insertarán aquí -->
+                </div>
+
+                <!-- Contenedor para la previsualización de la imagen -->
+                <div id="image-preview-container" class="hidden">
+                    <img id="image-preview" src="" alt="Vista previa de la imagen">
+                </div>
+
+                <div class="chat-input-area">
+                    <!-- Botón para subir imagen -->
+                    <input type="file" id="image-upload" accept="image/*" class="hidden">
+                    <button id="image-upload-button" class="image-upload-button">
+                        <svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-4 3 3 5-5V15z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+
+                    <input type="text" id="user-input" class="chat-input" placeholder="Escribe tu mensaje o pega una imagen...">
+                    
+                    <!-- Botón de enviar mensaje -->
+                    <button id="send-button" class="send-button">
+                        <svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1  0 00.553.894l5 1.429a1 1 0 001.169-1.409l-7-14z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sección de Videos de YouTube -->
+            <div id="videos-view" class="content-section">
+                <h2 class="text-2xl font-bold text-center mb-6">Videos de YouTube</h2>
+                <p class="text-center text-gray-400 mb-6">Pega la URL de un video de YouTube y lo incrustaré aquí.</p>
+                <div class="video-input-container">
+                    <input type="text" id="youtube-url-input" class="video-input" placeholder="Pega la URL del video de YouTube aquí...">
+                    <button id="embed-video-button" class="embed-video-button">Incrustar Video</button>
+                </div>
+                <div id="youtube-player-container" class="w-full h-80 flex items-center justify-center bg-gray-700 rounded-lg overflow-hidden">
+                    <p class="text-gray-500">El video incrustado aparecerá aquí.</p>
+                </div>
+            </div>
+
+            <!-- Sección de Juegos (vacía por ahora, puedes pedirme juegos al chatbot) -->
+            <div id="games-view" class="content-section">
+                <h2 class="text-2xl font-bold text-center mb-6">Juegos</h2>
+                <p class="text-center text-gray-400 mb-6">Aquí puedes jugar a juegos creados con HTML/JavaScript.</p>
+                <div id="game-area" class="w-full h-96 flex items-center justify-center bg-gray-700 rounded-lg overflow-hidden">
+                    <p class="text-gray-500">¡Tu juego aparecerá aquí! Pídeme que genere un juego en el chat para probar.</p>
+                </div>
+                <!-- REMOVIDO: Nota importante sobre la detección de software de monitoreo -->
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // TU CLAVE API DE GOOGLE GEMINI YA ESTÁ PEGADA AQUÍ
+        const apiKey = "AIzaSyCU1SWHZiAZj8-ROAuQcNMrTJY3j2mWKg4"; 
+
+        const MODEL_NAME = 'gemini-2.0-flash'; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
+
+        // Elementos del chat
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const imageUploadButton = document.getElementById('image-upload-button');
+        const imageUploadInput = document.getElementById('image-upload');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+
+        // Botones de la barra lateral
+        const chatButton = document.getElementById('chat-button');
+        const newConversationButton = document.getElementById('new-conversation-button');
+        const gamesUnblockedButton = document.getElementById('games-unblocked-button'); // Nuevo botón
+        const videosButton = document.getElementById('videos-button');
+        const gamesButton = document.getElementById('games-button');
+
+        // Secciones de contenido
+        const chatView = document.getElementById('chat-view');
+        const videosView = document.getElementById('videos-view');
+        const gamesView = document.getElementById('games-view');
+
+        // Elementos de la sección de videos
+        const youtubeUrlInput = document.getElementById('youtube-url-input');
+        const embedVideoButton = document.getElementById('embed-video-button');
+        const youtubePlayerContainer = document.getElementById('youtube-player-container');
+
+        // Historial de la conversación para enviar al modelo de IA
+        let conversationHistory = [];
+        let uploadedImageData = null;
+
+        // Función para cambiar la sección activa
+        function showSection(sectionToShow) {
+            const sections = [chatView, videosView, gamesView];
+            sections.forEach(section => {
+                if (section === sectionToShow) {
+                    section.classList.add('active');
+                } else {
+                    section.classList.remove('active');
+                }
+            });
+
+            // Actualizar estado activo de los botones de la sidebar
+            const sidebarButtons = [chatButton, newConversationButton, gamesUnblockedButton, videosButton, gamesButton];
+            sidebarButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            if (sectionToShow === chatView) {
+                chatButton.classList.add('active');
+            } else if (sectionToShow === videosView) {
+                videosButton.classList.add('active');
+            } else if (sectionToShow === gamesView) {
+                gamesButton.classList.add('active');
+            }
+            // newConversationButton y gamesUnblockedButton no necesitan active, ya que solo disparan una acción/link
+        }
+
+
+        // Función para convertir una imagen a Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Función para añadir mensajes al chat
+        function addMessage(sender, text, imageDataUrl = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+
+            const avatarDiv = document.createElement('div');
+            avatarDiv.classList.add('message-avatar');
+            avatarDiv.textContent = sender === 'user' ? 'Tú' : 'FTM';
+
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.classList.add('message-bubble');
+            
+            if (text) {
+                const textNode = document.createTextNode(text);
+                bubbleDiv.appendChild(textNode);
+            }
+
+            if (imageDataUrl) {
+                const imgElement = document.createElement('img');
+                imgElement.src = imageDataUrl;
+                imgElement.alt = sender === 'user' ? 'Imagen enviada' : 'Imagen de FTM';
+                bubbleDiv.appendChild(imgElement);
+            }
+
+            messageDiv.appendChild(avatarDiv);
+            messageDiv.appendChild(bubbleDiv);
+            chatMessages.appendChild(messageDiv);
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Función para mostrar indicador de carga
+        function showLoadingIndicator() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.classList.add('message', 'bot', 'loading-indicator');
+            const avatarDiv = document.createElement('div');
+            avatarDiv.classList.add('message-avatar');
+            avatarDiv.textContent = 'FTM';
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.classList.add('message-bubble');
+            bubbleDiv.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+            loadingDiv.appendChild(avatarDiv);
+            loadingDiv.appendChild(bubbleDiv);
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Función para ocultar indicador de carga
+        function hideLoadingIndicator() {
+            const loadingDiv = document.querySelector('.loading-indicator');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        // Función para limpiar la imagen seleccionada/pegada
+        function clearImageSelection() {
+            uploadedImageData = null;
+            imageUploadInput.value = '';
+            imagePreviewContainer.classList.add('hidden');
+            imagePreview.src = '';
+        }
+
+        // Función para enviar mensaje a la IA
+        async function sendMessage() {
+            const message = userInput.value.trim();
+
+            if (message === '' && !uploadedImageData) return;
+
+            let userParts = [];
+            if (message) {
+                userParts.push({ text: message });
+            }
+            if (uploadedImageData) {
+                userParts.push({
+                    inlineData: {
+                        mimeType: uploadedImageData.mimeType,
+                        data: uploadedImageData.base64
+                    }
+                });
+            }
+
+            addMessage('user', message, uploadedImageData ? `data:${uploadedImageData.mimeType};base64,${uploadedImageData.base64}` : null); 
+            conversationHistory.push({ role: "user", parts: userParts });
+            
+            userInput.value = '';
+            clearImageSelection();
+
+            showLoadingIndicator();
+
+            try {
+                const payload = {
+                    contents: conversationHistory,
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorResponse = await response.json();
+                    console.error('Error en la API de Gemini:', errorResponse);
+                    throw new Error(`Error en la API: ${response.status} - ${errorResponse.error.message || 'Error desconocido'}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const botResponse = result.candidates[0].content.parts[0].text;
+                    hideLoadingIndicator();
+                    addMessage('bot', botResponse);
+                    conversationHistory.push({ role: "model", parts: [{ text: botResponse }] });
+                } else {
+                    console.error('Respuesta inesperada de la IA:', result);
+                    throw new Error('La IA no proporcionó una respuesta válida.');
+                }
+
+            } catch (error) {
+                console.error('Error al comunicarse con la IA:', error);
+                hideLoadingIndicator();
+                addMessage('bot', 'Lo siento, no pude comunicarme con el asistente. Intenta de nuevo más tarde.'); // Cambiado "IA" a "asistente"
+                if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === 'user') {
+                    conversationHistory.pop(); 
+                }
+            }
+        }
+
+        // Función para iniciar una nueva conversación
+        function startNewConversation() {
+            conversationHistory = [];
+            chatMessages.innerHTML = '';
+            clearImageSelection();
+            // Mensaje de bienvenida inicial (modificado para no mencionar IA)
+            addMessage('bot', '¡Hola! Soy FTM. Estoy aquí para ayudarte. Ahora también puedes ver videos de YouTube y jugar a juegos. ¡Pregúntame lo que quieras!'); 
+            userInput.value = '';
+            showSection(chatView); // Asegurarse de volver al chat
+            chatButton.classList.add('active'); // Activar botón de chat
+        }
+
+        // Función para incrustar video de YouTube
+        function embedYouTubeVideo() {
+            const url = youtubeUrlInput.value.trim();
+            if (!url) return;
+
+            // Extraer el ID del video de YouTube
+            const videoIdMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|v\/|)([\w-]{11})(?:\S+)?/);
+            
+            if (videoIdMatch && videoIdMatch[1]) {
+                const videoId = videoIdMatch[1];
+                const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                
+                youtubePlayerContainer.innerHTML = `
+                    <iframe 
+                        class="video-player" 
+                        src="${embedUrl}" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen
+                    ></iframe>
+                `;
+                youtubeUrlInput.value = ''; // Limpiar el input
+            } else {
+                youtubePlayerContainer.innerHTML = `<p class="text-red-400">URL de YouTube no válida. Por favor, pega una URL de video correcta.</p>`;
+            }
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        imageUploadButton.addEventListener('click', () => {
+            imageUploadInput.click();
+        });
+
+        imageUploadInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                try {
+                    const base64 = await fileToBase64(file);
+                    uploadedImageData = {
+                        base64: base64,
+                        mimeType: file.type
+                    };
+                    imagePreview.src = URL.createObjectURL(file);
+                    imagePreviewContainer.classList.remove('hidden');
+                } catch (error) {
+                    console.error('Error al leer el archivo de imagen:', error);
+                }
+            } else if (file) {
+                clearImageSelection();
+            }
+        });
+
+        userInput.addEventListener('paste', async (event) => {
+            const items = event.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.startsWith('image/')) {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                        try {
+                            const base64 = await fileToBase64(file);
+                            uploadedImageData = {
+                                base64: base64,
+                                mimeType: file.type
+                            };
+                            imagePreview.src = URL.createObjectURL(file);
+                            imagePreviewContainer.classList.remove('hidden');
+                            userInput.value = '';
+                            event.preventDefault();
+                            break;
+                        } catch (error) {
+                            console.error('Error al pegar la imagen:', error);
+                        }
+                    }
+                }
+            }
+        });
+
+        // Event listeners para los botones de navegación de la sidebar
+        chatButton.addEventListener('click', () => showSection(chatView));
+        newConversationButton.addEventListener('click', startNewConversation); // Llama a startNewConversation
+        
+        // Nuevo Event Listener para el botón "Games unblocked"
+        gamesUnblockedButton.addEventListener('click', () => {
+            window.open('https://fabc762.github.io/Unblocked-Gamess/', '_blank');
+        });
+
+        videosButton.addEventListener('click', () => showSection(videosView));
+        gamesButton.addEventListener('click', () => showSection(gamesView)); // Este es el de la sección de juegos vacía
+
+        // Event listener para incrustar video
+        embedVideoButton.addEventListener('click', embedYouTubeVideo);
+        youtubeUrlInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                embedYouTubeVideo();
+            }
+        });
+
+
+        // Al cargar la página, iniciar la conversación inicial y mostrar la sección de chat
+        startNewConversation();
+        showSection(chatView); // Asegurarse de que el chat sea la vista inicial
+    </script>
+</body>
+</html>
